@@ -1,4 +1,5 @@
 from telebot import types, TeleBot
+from collections import OrderedDict
 import json
 
 
@@ -56,7 +57,8 @@ def enter_queue(call):
         # если при нажатии кнопки очереди в списке не было, добавим в список очередь с первым человеком в ней
         # каждая очередь - словарь участников очереди. Каждый участник очереди - пара ключ-значение, где ключ - id в тг
         # значение - кортеж из его имени и фамилии
-        queues[call.inline_message_id] = {call.from_user.id: (call.from_user.first_name, call.from_user.last_name)}
+        queues[call.inline_message_id] = OrderedDict(
+            [(str(call.from_user.id), (call.from_user.first_name, call.from_user.last_name))])
         last_name = '' if call.from_user.last_name is None else call.from_user.last_name  # не выводим фамилию если None
         text = 'Очередь {} *{}*\n1. {} {}'.format(prep, subj, call.from_user.first_name, last_name)
         write_json()
