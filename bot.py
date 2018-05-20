@@ -5,13 +5,13 @@ import json
 
 bot = TeleBot('INSERT TOKEN')
 bot_username = 'INSERT BOT USERNAME'
-queues = {}
+queues = OrderedDict()
 
 
 def read_json():
     global queues
     with open('queues.json') as f:
-        queues = json.loads(f.read())
+        queues = OrderedDict(json.loads(f.read()))
 
 
 def write_json():
@@ -21,7 +21,7 @@ def write_json():
 
 @bot.message_handler()
 def wrong_door(msg):
-    bot.send_message(msg.chat.id, 'Я не работаю в личной переписке. Очердь - это когда минимум 2 человека. Введи '
+    bot.send_message(msg.chat.id, 'Я не работаю в личной переписке. Очередь - это когда минимум 2 человека. Введи '
                                   '@{} в чате и радуйся!'.format(bot_username))
 
 
@@ -65,7 +65,8 @@ def enter_queue(call):
         bot.edit_message_text(text, inline_message_id=call.inline_message_id, reply_markup=key, parse_mode='Markdown')
     else:
         if str(call.from_user.id) not in queues[call.inline_message_id]:
-            queues[call.inline_message_id].update({call.from_user.id: (call.from_user.first_name, call.from_user.last_name)})
+            queues[call.inline_message_id].update({str(call.from_user.id): (call.from_user.first_name, call.from_user.last_name)})
+            queues[call.inline_message_id].move_to_end(str(call.from_user.id))
             text = 'Очередь {} *{}*\n'.format(prep, subj)
             n = 1
             for i in queues[call.inline_message_id]:
