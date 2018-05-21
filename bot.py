@@ -12,7 +12,8 @@ def read_json():
     global queues
     with open('queues.json') as f:
         queues = OrderedDict(json.loads(f.read()))
-
+    for q in queues:
+        queues[q] = OrderedDict(queues[q])
 
 def write_json():
     with open('queues.json', 'w') as f:
