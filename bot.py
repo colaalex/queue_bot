@@ -4,14 +4,16 @@ import json
 
 
 bot = TeleBot('INSERT TOKEN')
-bot_username = 'INSERT BOT USERNAME'
-queues = {}
+bot_username = 'INSERT USERNAME'
+queues = OrderedDict()
 
 
 def read_json():
     global queues
     with open('queues.json') as f:
-        queues = json.loads(f.read())
+        queues = OrderedDict(json.loads(f.read()))
+    for q in queues:
+        queues[q] = OrderedDict(queues[q])
 
 
 def write_json():
@@ -21,7 +23,7 @@ def write_json():
 
 @bot.message_handler()
 def wrong_door(msg):
-    bot.send_message(msg.chat.id, 'Я не работаю в личной переписке. Очердь - это когда минимум 2 человека. Введи '
+    bot.send_message(msg.chat.id, 'Я не работаю в личной переписке. Очередь - это когда минимум 2 человека. Введи '
                                   '@{} в чате и радуйся!'.format(bot_username))
 
 
@@ -32,24 +34,37 @@ def get_msg(query):
         key.add(types.InlineKeyboardButton('Встать в очередь', callback_data='enter_' + query.query))
         key1 = types.InlineKeyboardMarkup()
         key1.add(types.InlineKeyboardButton('Встать в очередь', callback_data='enter1_' + query.query))
+        key2 = types.InlineKeyboardMarkup()
+        key2.add(types.InlineKeyboardButton('Встать в очередь', callback_data='enter2_' + query.query))
         queue = types.InlineQueryResultArticle(id='1', title='Создать очередь', description='Очередь на '+query.query,
                                                input_message_content=types.InputTextMessageContent(
-                                                   message_text='Очередь на *'+query.query+'*',
+                                                   message_text='Очередь на *' + query.query + '*',
                                                    parse_mode='Markdown'
                                                ), reply_markup=key)
         queue1 = types.InlineQueryResultArticle(id='2', title='Создать очередь', description='Очередь в '+query.query,
                                                 input_message_content=types.InputTextMessageContent(
-                                                    message_text='Очередь в *'+query.query+'*',
+                                                    message_text='Очередь в *' + query.query + '*',
                                                     parse_mode='Markdown'
                                                 ), reply_markup=key1)
-        bot.answer_inline_query(query.id, [queue, queue1])
+        queue2 = types.InlineQueryResultArticle(id='3', title='Создать очерель',
+                                                description='Очередь за ' + query.query,
+                                                input_message_content=types.InputTextMessageContent(
+                                                    message_text='Очередь за *' + query.query + '*',
+                                                    parse_mode='Markdown'
+                                                ), reply_markup=key2)
+        bot.answer_inline_query(query.id, [queue, queue1, queue2])
     except Exception as e:
         print(e)
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('enter'))
 def enter_queue(call):
-    prep = 'на' if call.data.startswith('enter_') else 'в'
+    if call.data.startswith('enter_'):
+        prep = 'на'
+    elif call.data.startswith('enter1_'):
+        prep = 'в'
+    else:
+        prep = 'за'
     subj = call.data.split('_')[1]
     key = types.InlineKeyboardMarkup()
     key.add(types.InlineKeyboardButton('Встать в очередь', callback_data=call.data))
@@ -65,7 +80,8 @@ def enter_queue(call):
         bot.edit_message_text(text, inline_message_id=call.inline_message_id, reply_markup=key, parse_mode='Markdown')
     else:
         if str(call.from_user.id) not in queues[call.inline_message_id]:
-            queues[call.inline_message_id].update({call.from_user.id: (call.from_user.first_name, call.from_user.last_name)})
+            queues[call.inline_message_id].update({str(call.from_user.id): (call.from_user.first_name, call.from_user.last_name)})
+            queues[call.inline_message_id].move_to_end(str(call.from_user.id))
             text = 'Очередь {} *{}*\n'.format(prep, subj)
             n = 1
             for i in queues[call.inline_message_id]:
