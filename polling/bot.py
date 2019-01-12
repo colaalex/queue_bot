@@ -1,7 +1,7 @@
-from telebot import types, TeleBot
-from collections import OrderedDict
 import json
+from collections import OrderedDict
 
+from telebot import types, TeleBot
 
 bot = TeleBot('INSERT TOKEN')
 bot_username = 'INSERT USERNAME'
