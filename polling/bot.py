@@ -3,8 +3,10 @@ from collections import OrderedDict
 
 from telebot import types, TeleBot
 
-bot = TeleBot('INSERT TOKEN')
-bot_username = 'INSERT USERNAME'
+import config
+
+bot = TeleBot(config.token)
+bot_username = config.username
 queues = OrderedDict()
 
 
@@ -28,37 +30,39 @@ def wrong_door(msg):
 
 
 @bot.inline_handler(func=lambda chosen_inline_result: True)
-def get_msg(query):
+def get_msg(query: types.InlineQuery):
+    """
+    Срабатывает, когда пользователь вводит @bot_username <запрос>, предлагает варианты очередей с заданным запросом
+    :param query: текст запроса
+    """
     try:
-        key = types.InlineKeyboardMarkup()
-        key.add(types.InlineKeyboardButton('Встать в очередь', callback_data='enter_' + query.query))
-        key1 = types.InlineKeyboardMarkup()
-        key1.add(types.InlineKeyboardButton('Встать в очередь', callback_data='enter1_' + query.query))
-        key2 = types.InlineKeyboardMarkup()
-        key2.add(types.InlineKeyboardButton('Встать в очередь', callback_data='enter2_' + query.query))
-        queue = types.InlineQueryResultArticle(id='1', title='Создать очередь', description='Очередь на '+query.query,
-                                               input_message_content=types.InputTextMessageContent(
-                                                   message_text='Очередь на *' + query.query + '*',
-                                                   parse_mode='Markdown'
-                                               ), reply_markup=key)
-        queue1 = types.InlineQueryResultArticle(id='2', title='Создать очередь', description='Очередь в '+query.query,
-                                                input_message_content=types.InputTextMessageContent(
-                                                    message_text='Очередь в *' + query.query + '*',
-                                                    parse_mode='Markdown'
-                                                ), reply_markup=key1)
-        queue2 = types.InlineQueryResultArticle(id='3', title='Создать очерель',
-                                                description='Очередь за ' + query.query,
-                                                input_message_content=types.InputTextMessageContent(
-                                                    message_text='Очередь за *' + query.query + '*',
-                                                    parse_mode='Markdown'
-                                                ), reply_markup=key2)
-        bot.answer_inline_query(query.id, [queue, queue1, queue2])
+        prepositions = ['на', 'в', 'за']
+        answers = []
+
+        for p in enumerate(prepositions):
+            key = types.InlineKeyboardMarkup()
+            key.add(types.InlineKeyboardButton(text='Встать в очередь',
+                                               callback_data='enter_{}_{}'.format(p[1], query.query)))
+            answers.append(types.InlineQueryResultArticle(id=str(p[0] + 1),
+                                                          title='Создать очередь',
+                                                          description='Очередь {} {}'.format(p[1], query.query),
+                                                          input_message_content=types.InputTextMessageContent(
+                                                              message_text='Очередь {} *{}*'.format(p[1], query.query),
+                                                              parse_mode='Markdown'
+                                                          ),
+                                                          reply_markup=key))
+
+        bot.answer_inline_query(query.id, answers)
     except Exception as e:
         print(e)
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('enter'))
-def enter_queue(call):
+def enter_queue(call: types.CallbackQuery):
+    """
+    Срабатывает при нажатии кнопки "Встать в очередь", не добавляет, если уже в очереди
+    :param call: callback от кнопки
+    """
     if call.data.startswith('enter_'):
         prep = 'на'
     elif call.data.startswith('enter1_'):
