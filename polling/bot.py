@@ -63,13 +63,9 @@ def enter_queue(call: types.CallbackQuery):
     Срабатывает при нажатии кнопки "Встать в очередь", не добавляет, если уже в очереди
     :param call: callback от кнопки
     """
-    if call.data.startswith('enter_'):
-        prep = 'на'
-    elif call.data.startswith('enter1_'):
-        prep = 'в'
-    else:
-        prep = 'за'
-    subj = call.data.split('_')[1]
+    data_parts = call.data.split('_')
+    prep = data_parts[1]  # Get the correct preposition from callback data
+    subj = ' '.join(data_parts[2:])
     key = types.InlineKeyboardMarkup()
     key.add(types.InlineKeyboardButton('Встать в очередь', callback_data=call.data))
     if call.inline_message_id not in queues:  # проверка нахождения очереди в списке текущих очередей
